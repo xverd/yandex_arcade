@@ -1,0 +1,12 @@
+Index: main
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>LELELE \n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/main b/main
+--- a/main	(revision 48e0e9a4cae30f57b3213ae6346811d98b0ee3c3)
++++ b/main	(date 1768502546954)
+@@ -1,1 +1,0 @@
+-LELELE 
