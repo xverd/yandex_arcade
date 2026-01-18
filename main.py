@@ -14,11 +14,35 @@ ENEMY_SHOOT_INTERVAL = random.randint(1, 4)
 GRAVITY = 1.0
 PLAYER_JUMP_SPEED = 18
 
+SETTINGS = {
+    "brightness": 1.0,  # 0.5 — 1.5
+    "filter": "NONE"  # NONE / DARK / COLD / WARM
+}
 
-class LevelView(arcade.View):
+
+class PostEffectMixin:  # фильтры и яркость
+    def draw_post_effects(self):
+        brightness = SETTINGS["brightness"]
+        filter_mode = SETTINGS["filter"]
+
+        if brightness < 1.0:
+            alpha = int((1.0 - brightness) * 220)
+            arcade.draw_lbwh_rectangle_filled(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (0, 0, 0, alpha))
+
+        if filter_mode == "COLD":
+            arcade.draw_lbwh_rectangle_filled(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (80, 140, 255, 70))
+        elif filter_mode == "WARM":
+            arcade.draw_lbwh_rectangle_filled(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (255, 160, 80, 70))
+        elif filter_mode == "DARK":
+            arcade.draw_lbwh_rectangle_filled(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (0, 0, 0, 120))
+
+
+class LevelView(arcade.View, PostEffectMixin):
     def __init__(self, level_num):
         super().__init__()
         self.level_num = level_num
+
+        # Игровые объекты
         self.player_sprite = None
         self.player_list = None
         self.wall_list = None
@@ -35,9 +59,7 @@ class LevelView(arcade.View):
 
         # HUD: иконка ключа
         self.key_hud_list = arcade.SpriteList()
-        self.key_hud_sprite = arcade.Sprite(
-            ":resources:images/items/keyYellow.png", 0.4
-        )
+        self.key_hud_sprite = arcade.Sprite(":resources:images/items/keyYellow.png", 0.4)
         self.key_hud_sprite.position = (40, SCREEN_HEIGHT - 50)
         self.key_hud_list.append(self.key_hud_sprite)
 
@@ -57,9 +79,7 @@ class LevelView(arcade.View):
             2: "images/winter.png",
             3: "images/military_base.png",
         }
-        bg_path = bg_map.get(
-            self.level_num, ":resources:images/backgrounds/abstract_1.jpg"
-        )
+        bg_path = bg_map.get(self.level_num, ":resources:images/backgrounds/abstract_1.jpg")
 
         self.background_sprite = arcade.Sprite(bg_path, 1.0)
         scale_x = SCREEN_WIDTH / self.background_sprite.width
@@ -72,7 +92,6 @@ class LevelView(arcade.View):
         # Пол и стены
         self.wall_list = arcade.SpriteList()
 
-        # Пол
         for x in range(0, SCREEN_WIDTH + 64, 64):
             wall = arcade.Sprite(":resources:images/tiles/grassMid.png", SPRITE_SCALING)
             wall.center_x = x
@@ -113,18 +132,14 @@ class LevelView(arcade.View):
 
         # Дверь
         self.door_list = arcade.SpriteList()
-        self.door_sprite = arcade.Sprite(
-            ":resources:images/tiles/doorClosed_mid.png", SPRITE_SCALING
-        )
+        self.door_sprite = arcade.Sprite(":resources:images/tiles/doorClosed_mid.png", SPRITE_SCALING)
         self.door_sprite.center_x = 1180
         self.door_sprite.center_y = 100
         self.door_list.append(self.door_sprite)
 
         # Ключ на карте
         self.key_list = arcade.SpriteList()
-        self.key_sprite = arcade.Sprite(
-            ":resources:images/items/keyYellow.png", SPRITE_SCALING
-        )
+        self.key_sprite = arcade.Sprite(":resources:images/items/keyYellow.png", SPRITE_SCALING)
         self.key_sprite.center_x = 600
         self.key_sprite.center_y = 200
         self.key_list.append(self.key_sprite)
@@ -137,27 +152,21 @@ class LevelView(arcade.View):
         self.enemy_list = arcade.SpriteList()
         if self.level_num == 1:
             for i in range(random.randint(3, 7)):
-                enemy = arcade.Sprite(
-                    ":resources:images/enemies/saw.png", SPRITE_SCALING
-                )
+                enemy = arcade.Sprite(":resources:images/enemies/saw.png", SPRITE_SCALING)
                 enemy.center_x = random.randint(100, 1000)
                 enemy.center_y = random.randint(100, 600)
                 enemy.shoot_timer = 0
                 self.enemy_list.append(enemy)
         elif self.level_num == 2:
             for i in range(6):
-                enemy = arcade.Sprite(
-                    ":resources:images/enemies/wormGreen.png", SPRITE_SCALING
-                )
+                enemy = arcade.Sprite(":resources:images/enemies/wormGreen.png", SPRITE_SCALING)
                 enemy.center_x = random.randint(100, 1000)
                 enemy.center_y = random.randint(100, 600)
                 enemy.shoot_timer = 0
                 self.enemy_list.append(enemy)
         elif self.level_num == 3:
             for i in range(3):
-                enemy = arcade.Sprite(
-                    ":resources:images/enemies/fly.png", SPRITE_SCALING
-                )
+                enemy = arcade.Sprite(":resources:images/enemies/fly.png", SPRITE_SCALING)
                 enemy.center_x = 400 + i * 100
                 enemy.center_y = 200
                 enemy.shoot_timer = 0
@@ -178,28 +187,21 @@ class LevelView(arcade.View):
             self.key_list.draw()
         # HUD
         self.key_hud_list.draw()
+
         # Жизни
         for i in range(self.lives):
-            arcade.draw_text(
-                "❤️", SCREEN_WIDTH - 50 - i * 40, 20, arcade.color.RED, font_size=24
-            )
+            arcade.draw_text("❤️", SCREEN_WIDTH - 50 - i * 40, 20, arcade.color.RED, 24)
+
         # Задачи
         if not self.has_key:
-            arcade.draw_text(
-                "Найдите ключ!", 10, SCREEN_HEIGHT - 80, arcade.color.YELLOW, 16
-            )
-        if len(self.enemy_list) > 0:
-            arcade.draw_text(
-                "Уничтожьте всех врагов!",
-                10,
-                SCREEN_HEIGHT - 100,
-                arcade.color.WHITE,
-                16,
-            )
-        if self.has_key and len(self.enemy_list) == 0:
-            arcade.draw_text(
-                "Идите к двери!", 10, SCREEN_HEIGHT - 120, arcade.color.GREEN, 16
-            )
+            arcade.draw_text("Найдите ключ!", 10, SCREEN_HEIGHT - 80, arcade.color.YELLOW, 16)
+        elif len(self.enemy_list) > 0:
+            arcade.draw_text("Уничтожьте всех врагов!", 10, SCREEN_HEIGHT - 100, arcade.color.WHITE, 16)
+        else:
+            arcade.draw_text("Идите к двери!", 10, SCREEN_HEIGHT - 120, arcade.color.GREEN, 16)
+
+        # Фильтры и яркость
+        self.draw_post_effects()
 
     def on_update(self, delta_time):
         # Физика
@@ -217,14 +219,12 @@ class LevelView(arcade.View):
                 enemy.shoot_timer = 0
 
         # Подбор ключа
-        if not self.has_key and arcade.check_for_collision(
-            self.player_sprite, self.key_sprite
-        ):
+        if not self.has_key and arcade.check_for_collision(self.player_sprite, self.key_sprite):
             self.has_key = True
             self.key_sprite.remove_from_sprite_lists()
             self.key_hud_sprite.alpha = 255
 
-        # Пули игрока - враги
+        # Пули игрока по врагам
         for bullet in self.player_bullet_list:
             hit_list = arcade.check_for_collision_with_list(bullet, self.enemy_list)
             if hit_list:
@@ -232,7 +232,7 @@ class LevelView(arcade.View):
                 for enemy in hit_list:
                     enemy.remove_from_sprite_lists()
 
-        # Пули врагов - игрок
+        # Пули врагов по игроку
         for bullet in self.enemy_bullet_list:
             if arcade.check_for_collision(bullet, self.player_sprite):
                 bullet.remove_from_sprite_lists()
@@ -243,23 +243,15 @@ class LevelView(arcade.View):
         # Удаление пуль за экраном
         for bullet_list in [self.player_bullet_list, self.enemy_bullet_list]:
             for bullet in bullet_list:
-                if (
-                    bullet.bottom > SCREEN_HEIGHT
-                    or bullet.top < 0
-                    or bullet.right < 0
-                    or bullet.left > SCREEN_WIDTH
-                ):
+                if (bullet.bottom > SCREEN_HEIGHT or bullet.top < 0
+                        or bullet.right < 0 or bullet.left > SCREEN_WIDTH):
                     bullet.remove_from_sprite_lists()
 
-        # Переход в дверь
-        if (
-            arcade.check_for_collision(self.player_sprite, self.door_sprite)
-            and self.has_key
-            and len(self.enemy_list) == 0
-        ):
+        # Переход к двери
+        if (arcade.check_for_collision(self.player_sprite, self.door_sprite)
+                and self.has_key and len(self.enemy_list) == 0):
             if self.level_num == 3:
-                end_view = EndView()
-                self.window.show_view(end_view)
+                self.window.show_view(EndView())
             else:
                 next_level = LevelView(self.level_num + 1)
                 next_level.setup()
@@ -306,8 +298,24 @@ class LevelView(arcade.View):
 
         self.enemy_bullet_list.append(bullet)
 
+    # фильтры и яркость
+    def draw_post_effects(self):
+        brightness = SETTINGS["brightness"]
+        filter_mode = SETTINGS["filter"]
 
-class MainMenuView(arcade.View):
+        if brightness < 1.0:
+            alpha = int((1.0 - brightness) * 220)
+            arcade.draw_lbwh_rectangle_filled(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (0, 0, 0, alpha))
+
+        if filter_mode == "COLD":
+            arcade.draw_lbwh_rectangle_filled(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (80, 140, 255, 70))
+        elif filter_mode == "WARM":
+            arcade.draw_lbwh_rectangle_filled(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (255, 160, 80, 70))
+        elif filter_mode == "DARK":
+            arcade.draw_lbwh_rectangle_filled(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (0, 0, 0, 120))
+
+
+class MainMenuView(arcade.View, PostEffectMixin):
     def __init__(self):
         super().__init__()
         self.background_sprite = None
@@ -333,37 +341,22 @@ class MainMenuView(arcade.View):
         self.background_sprite.center_y = SCREEN_HEIGHT // 2
         self.background_list.append(self.background_sprite)
 
-        # Создаём кнопки
+        # Создание кнопок
         button_y_start = SCREEN_HEIGHT // 2 + 50
         button_spacing = 60
-
         self.buttons = [
-            (
-                "ИГРАТЬ", 
-                SCREEN_WIDTH // 2, 
-                button_y_start,
-                self.start_game),
-            (
-                "НАСТРОЙКИ",
-                SCREEN_WIDTH // 2,
-                button_y_start - button_spacing,
-                self.show_settings,
-            ),
-            (
-                "ВЫХОД",
-                SCREEN_WIDTH // 2,
-                button_y_start - 2 * button_spacing,
-                self.exit_game,
-            ),
+            ("ИГРАТЬ", SCREEN_WIDTH // 2, button_y_start, self.start_game),
+            ("НАСТРОЙКИ", SCREEN_WIDTH // 2, button_y_start - button_spacing, self.show_settings),
+            ("ВЫХОД", SCREEN_WIDTH // 2, button_y_start - 2 * button_spacing, self.exit_game),
         ]
 
     def on_draw(self):
         self.clear()
         self.background_list.draw()
-
         for i, (text, x, y, _) in enumerate(self.buttons):
-            color = (arcade.color.YELLOW if i == self.selected_button else arcade.color.WHITE)
-            arcade.draw_text(text, x, y, color, font_size=30, anchor_x="center", bold=True)
+            color = arcade.color.YELLOW if i == self.selected_button else arcade.color.WHITE
+            arcade.draw_text(text, x, y, color, 30, anchor_x="center", bold=True)
+        self.draw_post_effects()
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.UP:
@@ -380,14 +373,42 @@ class MainMenuView(arcade.View):
         self.window.show_view(game_view)
 
     def show_settings(self):
-        # Пока пусто — можно добавить позже
-        pass
+        self.window.show_view(SettingsView())
 
     def exit_game(self):
         arcade.exit()
 
 
-class EndView(arcade.View):
+class SettingsView(arcade.View, PostEffectMixin):  # окно настроек
+    FILTERS = ["NONE", "DARK", "COLD", "WARM"]
+
+    def on_draw(self):
+        self.clear()
+        arcade.draw_text("НАСТРОЙКИ", SCREEN_WIDTH / 2, SCREEN_HEIGHT - 100, arcade.color.WHITE, 36, anchor_x="center")
+        arcade.draw_text(f"Яркость: {SETTINGS['brightness']:.1f}", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 40,
+                         arcade.color.WHITE, 24, anchor_x="center")
+        arcade.draw_text(f"Фильтр: {SETTINGS['filter']}", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, arcade.color.WHITE, 24,
+                         anchor_x="center")
+        arcade.draw_text("← → яркость | ↑ ↓ фильтр | ESC назад", SCREEN_WIDTH / 2, 100, arcade.color.GRAY, 16,
+                         anchor_x="center")
+        self.draw_post_effects()
+
+    def on_key_press(self, key, modifiers):
+        if key == arcade.key.LEFT:
+            SETTINGS["brightness"] = max(0.5, SETTINGS["brightness"] - 0.1)
+        elif key == arcade.key.RIGHT:
+            SETTINGS["brightness"] = min(1.5, SETTINGS["brightness"] + 0.1)
+        elif key == arcade.key.UP:
+            i = self.FILTERS.index(SETTINGS["filter"])
+            SETTINGS["filter"] = self.FILTERS[(i + 1) % len(self.FILTERS)]
+        elif key == arcade.key.DOWN:
+            i = self.FILTERS.index(SETTINGS["filter"])
+            SETTINGS["filter"] = self.FILTERS[(i - 1) % len(self.FILTERS)]
+        elif key == arcade.key.ESCAPE:
+            self.window.show_view(MainMenuView())
+
+
+class EndView(arcade.View, PostEffectMixin):
     def on_show_view(self):
         arcade.set_background_color(arcade.color.BLACK)
 
@@ -417,6 +438,8 @@ class EndView(arcade.View):
             font_size=18,
             anchor_x="center",
         )
+
+        self.draw_post_effects()
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.ESCAPE:
