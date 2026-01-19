@@ -8,6 +8,9 @@ SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 SCREEN_TITLE = "The Path to Emptiness"
 
+main_sound = arcade.load_sound('sound/glavn_game.mp3', streaming=True)
+level_sound = arcade.load_sound("sound/sound_game.mp3", streaming=True)
+
 PLAYER_SPEED = 5
 SPRITE_SCALING = 0.5
 BULLET_SPEED = 7
@@ -101,6 +104,8 @@ class LevelView(arcade.View, PostEffectMixin):
     def __init__(self, level_num):
         super().__init__()
         self.level_num = level_num
+
+        self.game_ = arcade.play_sound(level_sound, volume=1, loop=True)
 
         # Игровые объекты
         self.player_sprite = None
@@ -215,8 +220,8 @@ class LevelView(arcade.View, PostEffectMixin):
         elif self.level_num == 3:
             for i in range(3):
                 enemy = arcade.Sprite(":resources:images/enemies/fly.png", SPRITE_SCALING)
-                enemy.center_x = 400 + i * 100
-                enemy.center_y = 200
+                enemy.center_x = random.randint(100, 1000)
+                enemy.center_y = random.randint(100, 600)
                 enemy.shoot_timer = 0
                 self.enemy_list.append(enemy)
 
@@ -270,6 +275,8 @@ class LevelView(arcade.View, PostEffectMixin):
             self.has_key = True
             self.key_sprite.remove_from_sprite_lists()
             self.key_hud_sprite.alpha = 255
+            key_sound = arcade.load_sound('sound/key.mp3')
+            arcade.play_sound(key_sound, volume=1)
 
         # Пули игрока по врагам
         for bullet in self.player_bullet_list:
@@ -334,6 +341,9 @@ class LevelView(arcade.View, PostEffectMixin):
 class MainMenuView(arcade.View, PostEffectMixin):
     def __init__(self):
         super().__init__()
+        # Музыка лоби
+        self.play_main = arcade.play_sound(main_sound, volume=1, loop=True)
+        
         self.background_list = arcade.SpriteList()
         self.buttons = []
         self.selected_button = 0
@@ -386,6 +396,7 @@ class MainMenuView(arcade.View, PostEffectMixin):
 
     def start_game(self):
         game_view = LevelView(1)
+        main_sound.stop(self.play_main)
         game_view.setup()
         self.window.show_view(game_view)
 
@@ -426,6 +437,11 @@ class SettingsView(arcade.View, PostEffectMixin):
 
 
 class EndView(arcade.View, PostEffectMixin):
+    def __init__(self, window = None, background_color = None):
+        super().__init__(window, background_color)
+        win_sound = arcade.load_sound("sound/win.mp3")
+        arcade.play_sound(win_sound, volume=1)
+
     def on_show_view(self):
         arcade.set_background_color(arcade.color.BLACK)
 
