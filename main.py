@@ -334,7 +334,7 @@ class LevelView(arcade.View, PostEffectMixin):
     def on_mouse_press(self, x, y, button, modifiers):
         bullet = Bullet(self.player_sprite.center_x, self.player_sprite.center_y, x, y)
         self.player_bullet_list.append(bullet)
-        arcade.play_sound(arcade.load_sound(":resources:/sounds/laser1.wav"))
+        arcade.play_sound(arcade.load_sound(":resources:/sounds/laser1.wav"), 0.2)
 
 
 # настройки
