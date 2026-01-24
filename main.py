@@ -375,7 +375,8 @@ class MainMenuView(arcade.View, PostEffectMixin):
         self.buttons = [
             ("ИГРАТЬ", SCREEN_WIDTH // 2, button_y_start, self.start_game),
             ("НАСТРОЙКИ", SCREEN_WIDTH // 2, button_y_start - button_spacing, self.show_settings),
-            ("ВЫХОД", SCREEN_WIDTH // 2, button_y_start - 2 * button_spacing, self.exit_game),
+            ("ПОДПИСКА", SCREEN_WIDTH // 2, button_y_start - 2 * button_spacing, self.podpiska),
+            ("ВЫХОД", SCREEN_WIDTH // 2, button_y_start - 3 * button_spacing, self.exit_game),
         ]
 
     def on_draw(self):
@@ -399,6 +400,8 @@ class MainMenuView(arcade.View, PostEffectMixin):
         main_sound.stop(self.play_main)
         self.window.show_view(StoryView())
 
+    def podpiska(self):
+        self.window.show_view(PodpiskaView())
 
     def show_settings(self):
         self.window.show_view(SettingsView())
@@ -569,6 +572,26 @@ class StoryView(arcade.View, PostEffectMixin):
             game_view.setup()
             self.window.show_view(game_view)
 
+class PodpiskaView(arcade.View, PostEffectMixin):
+    def __init__(self):
+        super().__init__()
+        self.background_list = arcade.SpriteList()
+
+        bg = arcade.Sprite("images/podpiska.jpg")
+        bg.width = SCREEN_WIDTH
+        bg.height = SCREEN_HEIGHT
+        bg.center_x = SCREEN_WIDTH // 2
+        bg.center_y = SCREEN_HEIGHT // 2
+        self.background_list.append(bg)
+
+    def on_draw(self):
+        self.clear()
+        self.background_list.draw()
+        self.draw_post_effects()
+
+    def on_key_press(self, key, modifiers):
+        if key == arcade.key.ESCAPE:
+            self.window.show_view(MainMenuView())
 
 
 def main():
