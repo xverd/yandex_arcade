@@ -104,7 +104,6 @@ class LevelView(arcade.View, PostEffectMixin):
     def __init__(self, level_num):
         super().__init__()
         self.level_num = level_num
-
         self.game_ = arcade.play_sound(level_sound, volume=1, loop=True)
 
         # Игровые объекты
@@ -341,8 +340,10 @@ class LevelView(arcade.View, PostEffectMixin):
 class MainMenuView(arcade.View, PostEffectMixin):
     def __init__(self):
         super().__init__()
+        self.play_main = False
         # Музыка лоби
-        self.play_main = arcade.play_sound(main_sound, volume=1, loop=True)
+        if self.play_main == False:
+            self.play_main = arcade.play_sound(main_sound, volume=1, loop=True)
         
         self.background_list = arcade.SpriteList()
         self.buttons = []
@@ -395,10 +396,9 @@ class MainMenuView(arcade.View, PostEffectMixin):
             callback()
 
     def start_game(self):
-        game_view = LevelView(1)
         main_sound.stop(self.play_main)
-        game_view.setup()
-        self.window.show_view(game_view)
+        self.window.show_view(StoryView())
+
 
     def show_settings(self):
         self.window.show_view(SettingsView())
@@ -457,6 +457,118 @@ class EndView(arcade.View, PostEffectMixin):
     def on_key_press(self, key, modifiers):
         if key == arcade.key.ESCAPE:
             arcade.exit()
+
+class StoryView(arcade.View, PostEffectMixin):
+    def __init__(self):
+        super().__init__()
+
+        self.panels = arcade.SpriteList()
+        self.current_panel = 0
+        self.timer = 0
+        self.switch_time = 2.0
+
+        image_paths = [
+            "history/1.jpg",
+            "history/2.jpeg",
+            "history/3.jpg",
+            "history/4.jpeg",
+            "history/5.jpg.avif",
+        ]
+
+        self.history = [
+            "123",
+            "321",
+            "132",
+            "213",
+            "231",
+        ]
+
+        for path in image_paths:
+            panel = arcade.Sprite(path)
+            panel.center_x = SCREEN_WIDTH // 2
+            panel.center_y = SCREEN_HEIGHT // 2
+
+            # Масштабирование под экран
+            scale_x = SCREEN_WIDTH / panel.width
+            scale_y = SCREEN_HEIGHT / panel.height
+            panel.scale = min(scale_x, scale_y) * 0.8
+
+            panel.alpha = 0
+            self.panels.append(panel)
+
+        self.total_panels = len(self.panels)
+
+    def on_draw(self):
+        self.clear()
+
+        if self.current_panel < len(self.panels):
+            temp_list = arcade.SpriteList()
+            temp_list.append(self.panels[self.current_panel])
+            temp_list.draw()
+
+        arcade.draw_text(
+            f"История {self.current_panel + 1}/{self.total_panels}",
+            SCREEN_WIDTH // 2,
+            SCREEN_HEIGHT // 2 - 150,
+            arcade.color.WHITE,
+            20,
+            anchor_x="center"
+        )
+
+        arcade.draw_text(
+            "ENTER — далее | SPACE — пропустить",
+            SCREEN_WIDTH // 2,
+            100,
+            arcade.color.GRAY,
+            16,
+            anchor_x="center"
+        )
+
+        if self.current_panel < len(self.history):
+            arcade.draw_text(
+                self.history[self.current_panel],
+                SCREEN_WIDTH // 2,
+                140,
+                arcade.color.WHITE,
+                20,
+                anchor_x="center",
+                align="center"
+            )
+
+        self.draw_post_effects()
+
+    def on_update(self, delta_time):
+        if self.current_panel >= self.total_panels:
+            return
+
+        panel = self.panels[self.current_panel]
+        panel.alpha = min(255, panel.alpha + 300 * delta_time)
+        self.timer += delta_time
+
+        if self.timer >= self.switch_time:
+            self.timer = 0
+            self.current_panel += 1
+
+            if self.current_panel >= self.total_panels:
+                game_view = LevelView(1)
+                game_view.setup()
+                self.window.show_view(game_view)
+
+    def on_key_press(self, key, modifiers):
+        if key == arcade.key.ENTER:
+            self.current_panel += 1
+            self.timer = 0
+
+            if self.current_panel >= self.total_panels:
+                game_view = LevelView(1)
+                game_view.setup()
+                self.window.show_view(game_view)
+
+        if key == arcade.key.SPACE:
+            game_view = LevelView(1)
+            game_view.setup()
+            self.window.show_view(game_view)
+
 
 
 def main():
