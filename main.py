@@ -63,7 +63,7 @@ class Player(arcade.Sprite):
 
 
 class Bullet(arcade.Sprite):
-    def __init__(self, start_x, start_y, target_x, target_y, speed=BULLET_SPEED, scale=0.5):
+    def __init__(self, start_x, start_y, target_x, target_y, speed=BULLET_SPEED, scale=1):
         super().__init__()
         self.texture = arcade.load_texture(":resources:images/space_shooter/laserBlue01.png")
         self.scale = scale
@@ -80,9 +80,7 @@ class Bullet(arcade.Sprite):
     def update(self, delta_time):
         self.center_x += self.change_x
         self.center_y += self.change_y
-        if (self.center_x < 0 or self.center_x > SCREEN_WIDTH or
-                self.center_y < 0 or self.center_y > SCREEN_HEIGHT):
-            self.remove_from_sprite_lists()
+        # Удаление за экраном делается в LevelView с учётом камеры
 
 
 class PostEffectMixin:  # Эфекты и яркость
@@ -119,6 +117,10 @@ class LevelView(arcade.View, PostEffectMixin):
         self.lives = 3
         self.physics_engine = None
 
+        # Камера 
+        self.camera_sprites = arcade.Camera2D()
+        self.camera_gui = arcade.Camera2D()
+
         # HUD: иконка ключа
         self.key_hud_list = arcade.SpriteList()
         self.key_hud_sprite = arcade.Sprite(":resources:images/items/keyYellow.png", 0.4)
@@ -128,6 +130,14 @@ class LevelView(arcade.View, PostEffectMixin):
         # Фон
         self.background_list = None
         self.background_sprite = None
+
+    def on_show_view(self):
+        if self.player_list is None:
+            self.setup()
+        # Привязываем камеры к окну
+        if self.window:
+            self.camera_sprites.match_window()
+            self.camera_gui.match_window()
 
     def setup(self):
         self.lives = 3
@@ -141,7 +151,6 @@ class LevelView(arcade.View, PostEffectMixin):
                   3: "images/military_base.png"}
 
         bg_path = bg_map.get(self.level_num, ":resources:images/backgrounds/abstract_1.jpg")
-
         self.background_sprite = arcade.Sprite(bg_path, 1.0)
         scale_x = SCREEN_WIDTH / self.background_sprite.width
         scale_y = SCREEN_HEIGHT / self.background_sprite.height
@@ -227,6 +236,10 @@ class LevelView(arcade.View, PostEffectMixin):
     # отрисовка
     def on_draw(self):
         self.clear()
+        
+        # Активируем камеру для игровых объектов
+        self.camera_sprites.use()
+        
         self.wall_list.draw()
         # Фон
         self.background_list.draw()
@@ -234,11 +247,16 @@ class LevelView(arcade.View, PostEffectMixin):
         self.player_list.draw()
         self.door_list.draw()
         self.enemy_list.draw()
-        self.player_bullet_list.draw()
-        self.enemy_bullet_list.draw()
         if not self.has_key:
             self.key_list.draw()
-            # HUD
+        # Пули рисуем поверх всего, чтобы были хорошо видны
+        self.player_bullet_list.draw()
+        self.enemy_bullet_list.draw()
+
+        # Активируем камеру для HUD (не следует за игроком)
+        self.camera_gui.use()
+        
+        # HUD
         self.key_hud_list.draw()
 
         for i in range(self.lives):
@@ -257,6 +275,10 @@ class LevelView(arcade.View, PostEffectMixin):
 
     def on_update(self, delta_time):  # физика
         self.physics_engine.update()
+
+        # Камера следует за игроком: в Arcade 3 position — центр вида (как в туториале)
+        self.camera_sprites.position = (self.player_sprite.center_x, self.player_sprite.center_y)
+
         self.player_bullet_list.update(delta_time)
         self.enemy_bullet_list.update(delta_time)
 
@@ -294,10 +316,17 @@ class LevelView(arcade.View, PostEffectMixin):
                     self.setup()
 
         # Пули за экраном
+        cam_cx, cam_cy = self.camera_sprites.position[0], self.camera_sprites.position[1]
+        screen_left = cam_cx - SCREEN_WIDTH / 2
+        screen_right = cam_cx + SCREEN_WIDTH / 2
+        screen_bottom = cam_cy - SCREEN_HEIGHT / 2
+        screen_top = cam_cy + SCREEN_HEIGHT / 2
+
         for bullet_list in [self.player_bullet_list, self.enemy_bullet_list]:
-            for bullet in bullet_list:
-                if (bullet.bottom > SCREEN_HEIGHT or bullet.top < 0 or bullet.right < 0 or bullet.left > SCREEN_WIDTH):
-                    bullet.remove_from_sprite_lists()
+            to_remove = [b for b in bullet_list if (b.bottom > screen_top or b.top < screen_bottom or
+                         b.right < screen_left or b.left > screen_right)]
+            for b in to_remove:
+                b.remove_from_sprite_lists()
 
         # Анимация
         self.player_sprite.is_walking = self.player_sprite.change_x != 0
@@ -331,7 +360,11 @@ class LevelView(arcade.View, PostEffectMixin):
 
     # стрельба
     def on_mouse_press(self, x, y, button, modifiers):
-        bullet = Bullet(self.player_sprite.center_x, self.player_sprite.center_y, x, y)
+        # Преобразуем экранные координаты мыши в мировые
+        world = self.camera_sprites.unproject((x, y))
+        world_x, world_y = world.x, world.y
+
+        bullet = Bullet(self.player_sprite.center_x, self.player_sprite.center_y, world_x, world_y)
         self.player_bullet_list.append(bullet)
         arcade.play_sound(arcade.load_sound(":resources:/sounds/laser1.wav"), 0.2)
 
@@ -342,7 +375,7 @@ class MainMenuView(arcade.View, PostEffectMixin):
         super().__init__()
         self.play_main = False
         # Музыка лоби
-        if self.play_main == False:
+        if not self.play_main:
             self.play_main = arcade.play_sound(main_sound, volume=1, loop=True)
         
         self.background_list = arcade.SpriteList()
@@ -398,7 +431,7 @@ class MainMenuView(arcade.View, PostEffectMixin):
 
     def start_game(self):
         main_sound.stop(self.play_main)
-        self.window.show_view(StoryView())
+        self.window.show_view(StoryView(self.window))
 
     def podpiska(self):
         self.window.show_view(PodpiskaView())
@@ -462,43 +495,44 @@ class EndView(arcade.View, PostEffectMixin):
             arcade.exit()
 
 class StoryView(arcade.View, PostEffectMixin):
-    def __init__(self):
-        super().__init__()
+    IMAGE_PATHS = [
+        "history/1.jpg",
+        "history/2.jpeg",
+        "history/3.jpg",
+        "history/4.jpeg",
+        "history/5.jpg.avif",
+    ]
+    HISTORY_TEXTS = ["123", "321", "132", "213", "231"]
 
+    def __init__(self, window=None):
+        super().__init__(window)
+        self._game_window = window
         self.panels = arcade.SpriteList()
         self.current_panel = 0
         self.timer = 0
         self.switch_time = 2.0
+        self._transition_done = False
+        self._pending_go_to_level = False
+        self._panels_loaded = False
+        self.total_panels = 0
+        self.history = list(self.HISTORY_TEXTS)
 
-        image_paths = [
-            "history/1.jpg",
-            "history/2.jpeg",
-            "history/3.jpg",
-            "history/4.jpeg",
-            "history/5.jpg.avif",
-        ]
-
-        self.history = [
-            "123",
-            "321",
-            "132",
-            "213",
-            "231",
-        ]
-
-        for path in image_paths:
-            panel = arcade.Sprite(path)
-            panel.center_x = SCREEN_WIDTH // 2
-            panel.center_y = SCREEN_HEIGHT // 2
-
-            # Масштабирование под экран
-            scale_x = SCREEN_WIDTH / panel.width
-            scale_y = SCREEN_HEIGHT / panel.height
-            panel.scale = min(scale_x, scale_y) * 0.8
-
-            panel.alpha = 0
-            self.panels.append(panel)
-
+    def on_show_view(self):
+        if self._panels_loaded:
+            return
+        self._panels_loaded = True
+        for path in self.IMAGE_PATHS:
+            try:
+                panel = arcade.Sprite(path)
+                panel.center_x = SCREEN_WIDTH // 2
+                panel.center_y = SCREEN_HEIGHT // 2
+                scale_x = SCREEN_WIDTH / panel.width
+                scale_y = SCREEN_HEIGHT / panel.height
+                panel.scale = min(scale_x, scale_y) * 0.8
+                panel.alpha = 0
+                self.panels.append(panel)
+            except Exception:
+                pass
         self.total_panels = len(self.panels)
 
     def on_draw(self):
@@ -509,8 +543,10 @@ class StoryView(arcade.View, PostEffectMixin):
             temp_list.append(self.panels[self.current_panel])
             temp_list.draw()
 
+        # Счётчик не больше total_panels
+        num = min(self.current_panel + 1, self.total_panels) if self.total_panels else 0
         arcade.draw_text(
-            f"История {self.current_panel + 1}/{self.total_panels}",
+            f"История {num}/{self.total_panels}",
             SCREEN_WIDTH // 2,
             SCREEN_HEIGHT // 2 - 150,
             arcade.color.WHITE,
