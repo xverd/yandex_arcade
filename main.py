@@ -36,34 +36,61 @@ class Player(arcade.Sprite):
     def __init__(self, scale=SPRITE_SCALING):
         super().__init__()
         self.scale = scale
-        self.idle_texture = arcade.load_texture(
-            ":resources:images/animated_characters/female_person/femalePerson_idle.png")  # текстура
-        self.texture = self.idle_texture
+        self.idle_texture = arcade.load_texture(":resources:images/animated_characters/robot/robot_idle.png")
         # Ходьба
-        self.walk_textures = []
-        for i in range(8):
-            tex_path = f":resources:images/animated_characters/female_person/femalePerson_walk{i}.png"
-            self.walk_textures.append(arcade.load_texture(tex_path))
+        self.walk_textures = [
+            arcade.load_texture(f":resources:images/animated_characters/robot/robot_walk{i}.png")
+            for i in range(8)
+        ]
+        # Прыжок
+        self.jump_texture = arcade.load_texture(":resources:images/animated_characters/robot/robot_jump.png")
+        # Падение
+        self.fall_texture = arcade.load_texture(":resources:images/animated_characters/robot/robot_fall.png")
+        # Лазание
+        self.climb_textures = [
+            arcade.load_texture(":resources:images/animated_characters/robot/robot_climb0.png"),
+            arcade.load_texture(":resources:images/animated_characters/robot/robot_climb1.png")
+        ]
+        # Начальная текстура
+        self.texture = self.idle_texture
+        self.face_direction = FaceDirection.RIGHT
+        # Анимация
         self.current_texture = 0
         self.texture_change_time = 0
         self.texture_change_delay = 0.1
         self.is_walking = False
-        self.face_direction = FaceDirection.RIGHT
+        self.is_jumping = False
+        self.is_falling = False
+        self.is_climbing = False
 
     def update_animation(self, delta_time: float = 1 / 60):
-        if self.is_walking:
+        # Определяем состояние
+        if self.change_y > 0 and not self.is_climbing:
+            self.is_jumping = True
+            self.is_falling = False
+            self.texture = self.jump_texture
+        elif self.change_y < 0 and not self.is_climbing:
+            self.is_falling = True
+            self.is_jumping = False
+            self.texture = self.fall_texture
+        elif self.is_climbing:
             self.texture_change_time += delta_time
             if self.texture_change_time >= self.texture_change_delay:
                 self.texture_change_time = 0
-                self.current_texture += 1
-                if self.current_texture >= len(self.walk_textures):
-                    self.current_texture = 0
-                if self.face_direction == FaceDirection.RIGHT:
-                    self.texture = self.walk_textures[self.current_texture]
-                else:
-                    self.texture = self.walk_textures[self.current_texture].flip_horizontally()
+                self.current_texture = (self.current_texture + 1) % len(self.climb_textures)
+                self.texture = self.climb_textures[self.current_texture]
+        elif self.is_walking:
+            self.texture_change_time += delta_time
+            if self.texture_change_time >= self.texture_change_delay:
+                self.texture_change_time = 0
+                self.current_texture = (self.current_texture + 1) % len(self.walk_textures)
+                self.texture = self.walk_textures[self.current_texture]
         else:
-            self.texture = self.idle_texture if self.face_direction == FaceDirection.RIGHT else self.idle_texture.flip_horizontally()
+            self.texture = self.idle_texture
+
+        # Флипы в зависимости от направления
+        if self.face_direction == FaceDirection.LEFT:
+            self.texture = self.texture.flip_horizontally()
 
 
 class Bullet(arcade.Sprite):
@@ -568,7 +595,7 @@ class StoryView(arcade.View, PostEffectMixin):
         "Если ты всё ещё человек,\n"
         "когда двери корабля закроются.",
 
-        "УДАЧИ................"
+        "УДАЧИ........."
     ]
 
     def __init__(self, window=None):
