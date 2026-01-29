@@ -8,6 +8,10 @@ SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 SCREEN_TITLE = "The Path to Emptiness"
 
+# Длина карты по горизонтали
+MAP_WIDTH = 4000
+MAP_HEIGHT = 720
+
 main_sound = arcade.load_sound('sound/glavn_game.mp3', streaming=True)
 level_sound = arcade.load_sound("sound/sound_game.mp3", streaming=True)
 
@@ -149,59 +153,58 @@ class LevelView(arcade.View, PostEffectMixin):
         bg_map = {1: "images/office.png",
                   2: "images/winter.png",
                   3: "images/military_base.png"}
-
         bg_path = bg_map.get(self.level_num, ":resources:images/backgrounds/abstract_1.jpg")
-        self.background_sprite = arcade.Sprite(bg_path, 1.0)
-        scale_x = SCREEN_WIDTH / self.background_sprite.width
-        scale_y = SCREEN_HEIGHT / self.background_sprite.height
-        self.background_sprite.scale = max(scale_x, scale_y)
-        self.background_sprite.center_x = SCREEN_WIDTH // 2
-        self.background_sprite.center_y = SCREEN_HEIGHT // 2
-        self.background_list.append(self.background_sprite)
+        first_bg = arcade.Sprite(bg_path, 1.0)
+        scale = MAP_HEIGHT / first_bg.height
+        tile_width = first_bg.width * scale
+        n_tiles = math.ceil(MAP_WIDTH / tile_width) + 1
+        for i in range(n_tiles):
+            tile = arcade.Sprite(bg_path, 1.0)
+            tile.scale = scale
+            tile.center_x = (i + 0.5) * tile_width
+            tile.center_y = MAP_HEIGHT // 2
+            self.background_list.append(tile)
 
-        # Пол и стены
+        # Пол на всю длину карты
         self.wall_list = arcade.SpriteList()
-        for x in range(0, SCREEN_WIDTH + 64, 64):
+        for x in range(0, MAP_WIDTH + 64, 64):
             wall = arcade.Sprite(":resources:images/tiles/grassMid.png", SPRITE_SCALING)
             wall.center_x = x
             wall.center_y = 32
             self.wall_list.append(wall)
 
-        # Стены по краям
-        for y in range(0, SCREEN_HEIGHT, 64):
-            # Левая стена
-
+        # Стены по краям карты
+        for y in range(0, MAP_HEIGHT, 64):
             wall = arcade.Sprite(":resources:images/tiles/boxCrate_double.png", SPRITE_SCALING)
             wall.left = 0
             wall.center_y = y
             self.wall_list.append(wall)
-            # Правая стена
             wall = arcade.Sprite(":resources:images/tiles/boxCrate_double.png", SPRITE_SCALING)
-            wall.right = SCREEN_WIDTH
+            wall.right = MAP_WIDTH
             wall.center_y = y
             self.wall_list.append(wall)
 
         # Игрок
         self.player_list = arcade.SpriteList()
         self.player_sprite = Player(SPRITE_SCALING)
-        self.player_sprite.center_x = 100
+        self.player_sprite.center_x = 200
         self.player_sprite.center_y = 200
         self.player_list.append(self.player_sprite)
 
         # Физика
         self.physics_engine = arcade.PhysicsEnginePlatformer(self.player_sprite, self.wall_list, GRAVITY)
 
-        # Дверь
+        # Дверь у правого края карты
         self.door_list = arcade.SpriteList()
         self.door_sprite = arcade.Sprite(":resources:images/tiles/doorClosed_mid.png", SPRITE_SCALING)
-        self.door_sprite.center_x = 1180
+        self.door_sprite.center_x = MAP_WIDTH - 100
         self.door_sprite.center_y = 100
         self.door_list.append(self.door_sprite)
 
-        # Ключ на карте
+        # Ключ в середине карты
         self.key_list = arcade.SpriteList()
         self.key_sprite = arcade.Sprite(":resources:images/items/keyYellow.png", SPRITE_SCALING)
-        self.key_sprite.center_x = 600
+        self.key_sprite.center_x = MAP_WIDTH // 2
         self.key_sprite.center_y = 200
         self.key_list.append(self.key_sprite)
 
@@ -209,27 +212,27 @@ class LevelView(arcade.View, PostEffectMixin):
         self.player_bullet_list = arcade.SpriteList()
         self.enemy_bullet_list = arcade.SpriteList()
 
-        # Враги
+        # Враги по всей длине карты
         self.enemy_list = arcade.SpriteList()
         if self.level_num == 1:
             for i in range(random.randint(3, 7)):
                 enemy = arcade.Sprite(":resources:images/enemies/saw.png", SPRITE_SCALING)
-                enemy.center_x = random.randint(100, 1000)
-                enemy.center_y = random.randint(100, 600)
+                enemy.center_x = random.randint(100, MAP_WIDTH - 100)
+                enemy.center_y = random.randint(100, MAP_HEIGHT - 100)
                 enemy.shoot_timer = 0
                 self.enemy_list.append(enemy)
         elif self.level_num == 2:
             for i in range(6):
                 enemy = arcade.Sprite(":resources:images/enemies/wormGreen.png", SPRITE_SCALING)
-                enemy.center_x = random.randint(100, 1000)
-                enemy.center_y = random.randint(100, 600)
+                enemy.center_x = random.randint(100, MAP_WIDTH - 100)
+                enemy.center_y = random.randint(100, MAP_HEIGHT - 100)
                 enemy.shoot_timer = 0
                 self.enemy_list.append(enemy)
         elif self.level_num == 3:
             for i in range(3):
                 enemy = arcade.Sprite(":resources:images/enemies/fly.png", SPRITE_SCALING)
-                enemy.center_x = random.randint(100, 1000)
-                enemy.center_y = random.randint(100, 600)
+                enemy.center_x = random.randint(100, MAP_WIDTH - 100)
+                enemy.center_y = random.randint(100, MAP_HEIGHT - 100)
                 enemy.shoot_timer = 0
                 self.enemy_list.append(enemy)
 
@@ -276,8 +279,12 @@ class LevelView(arcade.View, PostEffectMixin):
     def on_update(self, delta_time):  # физика
         self.physics_engine.update()
 
-        # Камера следует за игроком: в Arcade 3 position — центр вида (как в туториале)
-        self.camera_sprites.position = (self.player_sprite.center_x, self.player_sprite.center_y)
+        # Камера следует за игроком, но не выходит за границы карты
+        cx = self.player_sprite.center_x
+        cy = self.player_sprite.center_y
+        cx = max(SCREEN_WIDTH / 2, min(cx, MAP_WIDTH - SCREEN_WIDTH / 2))
+        cy = max(SCREEN_HEIGHT / 2, min(cy, MAP_HEIGHT - SCREEN_HEIGHT / 2))
+        self.camera_sprites.position = (cx, cy)
 
         self.player_bullet_list.update(delta_time)
         self.enemy_bullet_list.update(delta_time)
