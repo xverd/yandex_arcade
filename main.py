@@ -121,7 +121,7 @@ class LevelView(arcade.View, PostEffectMixin):
         self.lives = 3
         self.physics_engine = None
 
-        # Камера 
+        # Камера
         self.camera_sprites = arcade.Camera2D()
         self.camera_gui = arcade.Camera2D()
 
@@ -239,10 +239,10 @@ class LevelView(arcade.View, PostEffectMixin):
     # отрисовка
     def on_draw(self):
         self.clear()
-        
+
         # Активируем камеру для игровых объектов
         self.camera_sprites.use()
-        
+
         self.wall_list.draw()
         # Фон
         self.background_list.draw()
@@ -258,7 +258,7 @@ class LevelView(arcade.View, PostEffectMixin):
 
         # Активируем камеру для HUD (не следует за игроком)
         self.camera_gui.use()
-        
+
         # HUD
         self.key_hud_list.draw()
 
@@ -331,7 +331,7 @@ class LevelView(arcade.View, PostEffectMixin):
 
         for bullet_list in [self.player_bullet_list, self.enemy_bullet_list]:
             to_remove = [b for b in bullet_list if (b.bottom > screen_top or b.top < screen_bottom or
-                         b.right < screen_left or b.left > screen_right)]
+                                                    b.right < screen_left or b.left > screen_right)]
             for b in to_remove:
                 b.remove_from_sprite_lists()
 
@@ -384,7 +384,7 @@ class MainMenuView(arcade.View, PostEffectMixin):
         # Музыка лоби
         if not self.play_main:
             self.play_main = arcade.play_sound(main_sound, volume=1, loop=True)
-        
+
         self.background_list = arcade.SpriteList()
         self.buttons = []
         self.selected_button = 0
@@ -480,7 +480,7 @@ class SettingsView(arcade.View, PostEffectMixin):
 
 
 class EndView(arcade.View, PostEffectMixin):
-    def __init__(self, window = None, background_color = None):
+    def __init__(self, window=None, background_color=None):
         super().__init__(window, background_color)
         win_sound = arcade.load_sound("sound/win.mp3")
         arcade.play_sound(win_sound, volume=1)
@@ -501,15 +501,75 @@ class EndView(arcade.View, PostEffectMixin):
         if key == arcade.key.ESCAPE:
             arcade.exit()
 
+
 class StoryView(arcade.View, PostEffectMixin):
     IMAGE_PATHS = [
-        "history/1.jpg",
-        "history/2.jpeg",
-        "history/3.jpg",
-        "history/4.jpeg",
-        "history/5.jpg.avif",
+        "history/hist1.png",
+        "history/hist1.png",
+        "history/hist1.png",
+        "history/hist1.png",
+        "history/hist1.png",
+        "history/hist1.png",
+        "history/hist1.png",
+        "history/hist1.png",
+        "history/hist1.png",
+        "history/hist1.png",
+        "history/hist1.png",
+        "history/hist1.png",
     ]
-    HISTORY_TEXTS = ["123", "321", "132", "213", "231"]
+    HISTORY_TEXTS = [
+        "ИСТОРИЯ\n\n"
+        "После взрыва на исследовательской станции\n"
+        "«Гелиос-9» связь с внешним миром\n"
+        "оборвалась за считанные минуты.\n\n"
+        "Что именно пошло не так — неизвестно:\n"
+        "авария ли это, эксперимент или намеренное вмешательство\n"
+        "...\n"
+        "Известно лишь одно — планету ЗАХВАТИЛИ.\n"
+        "И она больше не принадлежит людям...",
+
+        "Ты — единственный выживший техник.\n\n"
+        "У тебя есть пистолет\n"
+        "но ты без команды и с минимальным запасом кислорода.\n\n"
+        "Единственная цель —\n"
+        "добраться до эвакуационного космолёта,\n"
+        "пришвартованного в самом дальнем секторе планеты.",
+
+        "НО МИР ИЗМЕНИЛСЯ.",
+
+        "Улицы, которые раньше освещались тёплым\n"
+        "солнечным светом, теперь погружены во тьму.\n\n"
+        "Здания населены существами,\n"
+        "которые когда-то были частью этой планеты…\n"
+        "Они чувствуют движение.\n"
+        "Звук.\n"
+        "Страх.\n\n"
+        "Они не охотятся — они уничтожают всё живое.",
+
+        "ты бежишь",
+
+        "бежишь....",
+
+        "Иногда кажется, что планета сама пытается тебя остановить.",
+
+        "БОРИСЬ\n\nБОРИСЬ\n\nБОРИСЬ",
+
+        "Каждый шаг вперёд — это выбор:\n\n"
+        "Рискнуть коротким путём или искать обход.\n"
+        "Прятаться или бежать.\n"
+        "Замедлиться ради безопасности или ускориться,\n"
+        "надеясь на удачу.",
+
+        "Где-то впереди — космолёт.\n\n"
+        "Последний шанс покинуть это место.",
+
+        "Если ты успеешь.\n"
+        "Если тебя не догонят.\n\n"
+        "Если ты всё ещё человек,\n"
+        "когда двери корабля закроются.",
+
+        "УДАЧИ................"
+    ]
 
     def __init__(self, window=None):
         super().__init__(window)
@@ -535,7 +595,7 @@ class StoryView(arcade.View, PostEffectMixin):
                 panel.center_y = SCREEN_HEIGHT // 2
                 scale_x = SCREEN_WIDTH / panel.width
                 scale_y = SCREEN_HEIGHT / panel.height
-                panel.scale = min(scale_x, scale_y) * 0.8
+                panel.scale = min(scale_x, scale_y) * 1.455
                 panel.alpha = 0
                 self.panels.append(panel)
             except Exception:
@@ -545,41 +605,68 @@ class StoryView(arcade.View, PostEffectMixin):
     def on_draw(self):
         self.clear()
 
+        # ФОН КАРТИНКИ ИСТОРИИ
         if self.current_panel < len(self.panels):
-            temp_list = arcade.SpriteList()
-            temp_list.append(self.panels[self.current_panel])
-            temp_list.draw()
+            self.panels[self.current_panel].alpha = 255
+            self.panels.draw()
 
-        # Счётчик не больше total_panels
+        # ТЕКСТ ИСТОРИИ
+        if self.current_panel < len(self.history):
+            text = self.history[self.current_panel]
+
+            color = arcade.color.WHITE
+            font_size = 20
+
+            if text == "НО МИР ИЗМЕНИЛСЯ.":
+                color = arcade.color.DARK_RED
+                font_size = 36
+
+            if "БОРИСЬ" in text:
+                color = arcade.color.RED
+                font_size = 44
+
+            if text in (
+                    "ты бежишь",
+                    "Иногда кажется, что планета сама пытается тебя остановить."
+            ):
+                color = arcade.color.GRAY
+                font_size = 14
+
+            story_text = arcade.Text(
+                text,
+                SCREEN_WIDTH // 2,
+                SCREEN_HEIGHT // 2,
+                color,
+                font_size=font_size,
+                font_name="Comic Sans MS",
+                anchor_x="center",
+                anchor_y="center",
+                width=SCREEN_WIDTH - 250,
+                multiline=True,
+                align="center"
+            )
+            story_text.draw()
+
+        # HUD
         num = min(self.current_panel + 1, self.total_panels) if self.total_panels else 0
+
         arcade.draw_text(
             f"История {num}/{self.total_panels}",
             SCREEN_WIDTH // 2,
-            SCREEN_HEIGHT // 2 - 150,
-            arcade.color.WHITE,
-            20,
-            anchor_x="center"
-        )
-
-        arcade.draw_text(
-            "ENTER — далее | SPACE — пропустить",
-            SCREEN_WIDTH // 2,
-            100,
+            60,
             arcade.color.GRAY,
             16,
             anchor_x="center"
         )
 
-        if self.current_panel < len(self.history):
-            arcade.draw_text(
-                self.history[self.current_panel],
-                SCREEN_WIDTH // 2,
-                140,
-                arcade.color.WHITE,
-                20,
-                anchor_x="center",
-                align="center"
-            )
+        arcade.draw_text(
+            "SPACE — далее",
+            SCREEN_WIDTH // 2,
+            30,
+            arcade.color.GRAY,
+            14,
+            anchor_x="center"
+        )
 
         self.draw_post_effects()
 
@@ -589,16 +676,6 @@ class StoryView(arcade.View, PostEffectMixin):
 
         panel = self.panels[self.current_panel]
         panel.alpha = min(255, panel.alpha + 300 * delta_time)
-        self.timer += delta_time
-
-        if self.timer >= self.switch_time:
-            self.timer = 0
-            self.current_panel += 1
-
-            if self.current_panel >= self.total_panels:
-                game_view = LevelView(1)
-                game_view.setup()
-                self.window.show_view(game_view)
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.ENTER:
@@ -614,6 +691,7 @@ class StoryView(arcade.View, PostEffectMixin):
             game_view = LevelView(1)
             game_view.setup()
             self.window.show_view(game_view)
+
 
 class PodpiskaView(arcade.View, PostEffectMixin):
     def __init__(self):
