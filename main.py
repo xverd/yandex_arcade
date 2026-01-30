@@ -136,6 +136,7 @@ class LevelView(arcade.View, PostEffectMixin):
         self.game_ = arcade.play_sound(level_sound, volume=1, loop=True)
 
         # Игровые объекты
+        self.plain_list = None
         self.player_sprite = None
         self.player_list = None
         self.wall_list = None
@@ -222,6 +223,12 @@ class LevelView(arcade.View, PostEffectMixin):
         self.physics_engine = arcade.PhysicsEnginePlatformer(self.player_sprite, self.wall_list, GRAVITY)
 
         # Дверь у правого края карты
+        self.fly_list = arcade.SpriteList()
+        self.plain_list = arcade.Sprite(":resources:/images/space_shooter/playerShip2_orange.png", SPRITE_SCALING)
+        self.plain_list.center_x = MAP_WIDTH - 100
+        self.plain_list.center_y = 100
+        self.fly_list.append(self.plain_list)
+
         self.door_list = arcade.SpriteList()
         self.door_sprite = arcade.Sprite(":resources:images/tiles/doorClosed_mid.png", SPRITE_SCALING)
         self.door_sprite.center_x = MAP_WIDTH - 100
@@ -274,8 +281,11 @@ class LevelView(arcade.View, PostEffectMixin):
         # Фон
         self.background_list.draw()
         # Игровые объекты
+        if self.level_num == 3:
+            self.fly_list.draw()
+        else:
+            self.door_list.draw()
         self.player_list.draw()
-        self.door_list.draw()
         self.enemy_list.draw()
         if not self.has_key:
             self.key_list.draw()
