@@ -32,6 +32,18 @@ class FaceDirection(enum.Enum):  # класс для направления вз
     RIGHT = 1
 
 
+def play_music(window, sound, volume=1):
+    # Останавливаем предыдущую музыку
+    if getattr(window, "music_player", None):
+        old_sound, old_player = window.music_player
+        old_sound.stop(old_player)
+        window.music_player = None
+
+    # Запускаем новую
+    player = arcade.play_sound(sound, volume=volume, loop=True)
+    window.music_player = (sound, player)
+
+
 class Player(arcade.Sprite):
     def __init__(self, scale=SPRITE_SCALING):
         super().__init__()
@@ -111,7 +123,6 @@ class Bullet(arcade.Sprite):
     def update(self, delta_time):
         self.center_x += self.change_x
         self.center_y += self.change_y
-        # Удаление за экраном делается в LevelView с учётом камеры
 
 
 class PostEffectMixin:  # Эфекты и яркость
@@ -133,9 +144,6 @@ class LevelView(arcade.View, PostEffectMixin):
     def __init__(self, level_num):
         super().__init__()
         self.level_num = level_num
-        self.level_music_player = None
-        if not self.level_music_player:
-            self.level_music_player = arcade.play_sound(level_sound, volume=1, loop=True)
 
         # Игровые объекты
         self.takeoff = False
@@ -169,9 +177,11 @@ class LevelView(arcade.View, PostEffectMixin):
         self.background_sprite = None
 
     def on_show_view(self):
+        play_music(self.window, level_sound, volume=1)
+
         if self.player_list is None:
             self.setup()
-        # Привязываем камеры к окну
+
         if self.window:
             self.camera_sprites.match_window()
             self.camera_gui.match_window()
@@ -436,16 +446,13 @@ class LevelView(arcade.View, PostEffectMixin):
 class MainMenuView(arcade.View, PostEffectMixin):
     def __init__(self):
         super().__init__()
-        self.play_main = False
-        # Музыка лоби
-        if not self.play_main:
-            self.play_main = arcade.play_sound(main_sound, volume=1, loop=True)
 
         self.background_list = arcade.SpriteList()
         self.buttons = []
         self.selected_button = 0
 
     def on_show_view(self):
+        play_music(self.window, main_sound, volume=1)
         arcade.set_background_color(arcade.color.BLACK)
 
         # Фон
@@ -493,7 +500,6 @@ class MainMenuView(arcade.View, PostEffectMixin):
             callback()
 
     def start_game(self):
-        main_sound.stop(self.play_main)
         self.window.show_view(StoryView(self.window))
 
     def podpiska(self):
@@ -540,7 +546,7 @@ class EndView(arcade.View, PostEffectMixin):
         super().__init__(window)
 
         win_sound = arcade.load_sound("sound/win.mp3")
-        arcade.play_sound(win_sound, volume=1)
+        play_music(self.window, win_sound, volume=1)
 
         # СПИСОК СПРАЙТОВ
         self.background_list = arcade.SpriteList()
@@ -742,7 +748,6 @@ class StoryView(arcade.View, PostEffectMixin):
             )
             story_text.draw()
 
-        # HUD
         num = min(self.current_panel + 1, self.total_panels) if self.total_panels else 0
 
         arcade.draw_text(
@@ -812,6 +817,7 @@ class PodpiskaView(arcade.View, PostEffectMixin):
 
 def main():
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+    window.music_player = None  # ← ВАЖНО
     start_view = MainMenuView()
     window.show_view(start_view)
     arcade.run()
