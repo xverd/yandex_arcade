@@ -138,9 +138,9 @@ class LevelView(arcade.View, PostEffectMixin):
             self.level_music_player = arcade.play_sound(level_sound, volume=1, loop=True)
 
         # Игровые объекты
-        self.takeoff = False        
-        self.takeoff_timer = 0     # таймер взлёта
-        self.takeoff_speed = 4     # скорость подъёма самолёта
+        self.takeoff = False
+        self.takeoff_timer = 0  # таймер взлёта
+        self.takeoff_speed = 4  # скорость подъёма самолёта
         self.plain_list = None
         self.player_sprite = None
         self.player_list = None
@@ -393,10 +393,10 @@ class LevelView(arcade.View, PostEffectMixin):
                 self.enemy_list) == 0:
             if self.level_num == 3:
                 if (
-                    arcade.check_for_collision(self.player_sprite, self.plain_list)
-                    and self.has_key
-                    and len(self.enemy_list) == 0
-                    and not self.takeoff
+                        arcade.check_for_collision(self.player_sprite, self.plain_list)
+                        and self.has_key
+                        and len(self.enemy_list) == 0
+                        and not self.takeoff
                 ):
                     self.takeoff = True
                     self.player_sprite.remove_from_sprite_lists()
@@ -536,21 +536,60 @@ class SettingsView(arcade.View, PostEffectMixin):
 
 
 class EndView(arcade.View, PostEffectMixin):
-    def __init__(self, window=None, background_color=None):
-        super().__init__(window, background_color)
+    def __init__(self, window=None):
+        super().__init__(window)
+
         win_sound = arcade.load_sound("sound/win.mp3")
         arcade.play_sound(win_sound, volume=1)
 
-    def on_show_view(self):
-        arcade.set_background_color(arcade.color.BLACK)
+        # СПИСОК СПРАЙТОВ
+        self.background_list = arcade.SpriteList()
+
+        background = arcade.Sprite("history/hist1.png")
+
+        scale_x = SCREEN_WIDTH / background.width
+        scale_y = SCREEN_HEIGHT / background.height
+        background.scale = max(scale_x, scale_y)
+
+        background.center_x = SCREEN_WIDTH // 2
+        background.center_y = SCREEN_HEIGHT // 2
+
+        self.background_list.append(background)
 
     def on_draw(self):
         self.clear()
-        arcade.draw_text("ПОБЕДА!", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 50, arcade.color.GREEN, 40, anchor_x="center")
-        arcade.draw_text("Вы сбежали с планеты!", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, arcade.color.WHITE, 24,
-                         anchor_x="center")
-        arcade.draw_text("Нажмите ESC, чтобы выйти", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 50, arcade.color.GRAY, 18,
-                         anchor_x="center")
+
+        # ФОН
+        self.background_list.draw()
+
+        # ТЕКСТ
+        arcade.draw_text(
+            "ПОБЕДА!",
+            SCREEN_WIDTH / 2,
+            SCREEN_HEIGHT / 2 + 120,
+            arcade.color.GREEN,
+            40,
+            anchor_x="center"
+        )
+
+        arcade.draw_text(
+            "Вы сбежали с планеты!",
+            SCREEN_WIDTH / 2,
+            SCREEN_HEIGHT / 2 + 70,
+            arcade.color.WHITE,
+            24,
+            anchor_x="center"
+        )
+
+        arcade.draw_text(
+            "Нажмите ESC, чтобы выйти",
+            SCREEN_WIDTH / 2,
+            60,
+            arcade.color.GRAY,
+            18,
+            anchor_x="center"
+        )
+
         self.draw_post_effects()
 
     def on_key_press(self, key, modifiers):
