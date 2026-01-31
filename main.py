@@ -138,6 +138,9 @@ class LevelView(arcade.View, PostEffectMixin):
             self.level_music_player = arcade.play_sound(level_sound, volume=1, loop=True)
 
         # Игровые объекты
+        self.takeoff = False        
+        self.takeoff_timer = 0     # таймер взлёта
+        self.takeoff_speed = 4     # скорость подъёма самолёта
         self.plain_list = None
         self.player_sprite = None
         self.player_list = None
@@ -328,6 +331,13 @@ class LevelView(arcade.View, PostEffectMixin):
         self.player_bullet_list.update(delta_time)
         self.enemy_bullet_list.update(delta_time)
 
+        if self.takeoff:
+            self.plain_list.center_y += self.takeoff_speed
+            self.takeoff_timer += delta_time
+
+        if self.takeoff_timer > 2.5:  # время взлёта (сек)
+            self.window.show_view(EndView())
+
         # Враги стреляют
         for enemy in self.enemy_list:
             enemy.shoot_timer += delta_time
@@ -382,7 +392,14 @@ class LevelView(arcade.View, PostEffectMixin):
         if arcade.check_for_collision(self.player_sprite, self.door_sprite) and self.has_key and len(
                 self.enemy_list) == 0:
             if self.level_num == 3:
-                self.window.show_view(EndView())
+                if (
+                    arcade.check_for_collision(self.player_sprite, self.plain_list)
+                    and self.has_key
+                    and len(self.enemy_list) == 0
+                    and not self.takeoff
+                ):
+                    self.takeoff = True
+                    self.player_sprite.remove_from_sprite_lists()
             else:
                 next_level = LevelView(self.level_num + 1)
                 next_level.setup()
