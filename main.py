@@ -33,13 +33,10 @@ class FaceDirection(enum.Enum):  # класс для направления вз
 
 
 def play_music(window, sound, volume=1):
-    # Останавливаем предыдущую музыку
     if getattr(window, "music_player", None):
         old_sound, old_player = window.music_player
         old_sound.stop(old_player)
         window.music_player = None
-
-    # Запускаем новую
     player = arcade.play_sound(sound, volume=volume, loop=True)
     window.music_player = (sound, player)
 
@@ -58,7 +55,6 @@ class Player(arcade.Sprite):
         self.jump_texture = arcade.load_texture(":resources:images/animated_characters/robot/robot_jump.png")
         # Падение
         self.fall_texture = arcade.load_texture(":resources:images/animated_characters/robot/robot_fall.png")
-        # Лазание
         self.climb_textures = [
             arcade.load_texture(":resources:images/animated_characters/robot/robot_climb0.png"),
             arcade.load_texture(":resources:images/animated_characters/robot/robot_climb1.png")
@@ -796,28 +792,120 @@ class StoryView(arcade.View, PostEffectMixin):
 class PodpiskaView(arcade.View, PostEffectMixin):
     def __init__(self):
         super().__init__()
-        self.background_list = arcade.SpriteList()
-
-        bg = arcade.Sprite("images/podpiska.jpg")
-        bg.width = SCREEN_WIDTH
-        bg.height = SCREEN_HEIGHT
-        bg.center_x = SCREEN_WIDTH // 2
-        bg.center_y = SCREEN_HEIGHT // 2
-        self.background_list.append(bg)
+        self.card_number = ""
+        self.cvv = ""
+        self.date = ""
+        self.active_field = 0  # 0 - карта, 1 - cvv, 2 - дата
+        self.message = ""
 
     def on_draw(self):
         self.clear()
-        self.background_list.draw()
+        arcade.set_background_color(arcade.color.BLACK)
+        arcade.draw_text(
+            "Введите банковскую карту",
+            SCREEN_WIDTH // 2,
+            SCREEN_HEIGHT - 120,
+            arcade.color.WHITE,
+            32,
+            anchor_x="center"
+        )
+
+        # Поля ввода
+        self.draw_field("Номер карты", self.format_card(self.card_number), SCREEN_HEIGHT - 220, self.active_field == 0)
+        self.draw_field("CVV", self.cvv or "__", SCREEN_HEIGHT - 300, self.active_field == 1)
+        self.draw_field("Дата (MM/YY)", self.date or "__/__",
+                        SCREEN_HEIGHT - 380, self.active_field == 2)
+
+        # Кнопка Оплатить
+        arcade.draw_lbwh_rectangle_filled(
+            SCREEN_WIDTH // 2 - 130, 150, 260, 60, arcade.color.DARK_RED
+        )
+        arcade.draw_text(
+            "Оплатить",
+            SCREEN_WIDTH // 2,
+            180,
+            arcade.color.WHITE,
+            24,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        # Сообщение об ошибке
+        if self.message:
+            arcade.draw_text(self.message, SCREEN_WIDTH // 2, 100, arcade.color.RED, 18, anchor_x="center")
         self.draw_post_effects()
 
+    def draw_field(self, title, value, y, active):
+        color = arcade.color.YELLOW if active else arcade.color.WHITE
+
+        # Название поля
+        arcade.draw_text(title, SCREEN_WIDTH // 2 - 200, y + 20, color, 18)
+
+        # Прямоугольник поля (обводка)
+        arcade.draw_lbwh_rectangle_outline(SCREEN_WIDTH // 2 - 200, y - 20, 400, 40, color, 2)
+
+        # Значение внутри
+        arcade.draw_text(value, SCREEN_WIDTH // 2 - 180, y - 10, arcade.color.WHITE, 18)
+
+    def format_card(self, text):
+        text = ''.join(filter(str.isdigit, text))  # оставляем только цифры
+        parts = [text[i:i + 4] for i in range(0, len(text), 4)]
+        return ' / '.join(parts)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        # Проверяем клик по полям
+        if SCREEN_HEIGHT - 220 - 20 < y < SCREEN_HEIGHT - 220 + 20:
+            self.active_field = 0
+        elif SCREEN_HEIGHT - 300 - 20 < y < SCREEN_HEIGHT - 300 + 20:
+            self.active_field = 1
+        elif SCREEN_HEIGHT - 380 - 20 < y < SCREEN_HEIGHT - 380 + 20:
+            self.active_field = 2
+        # Кнопка Оплатить
+        elif 150 < y < 210 and abs(x - SCREEN_WIDTH // 2) < 130:
+            self.message = "Недостаточно средств (свяжитесь с поддержкой)"
+
     def on_key_press(self, key, modifiers):
-        if key == arcade.key.ESCAPE:
+        if key == arcade.key.TAB:
+            self.active_field = (self.active_field + 1) % 3
+        elif key == arcade.key.BACKSPACE:
+            self.remove_char()
+        elif key == arcade.key.ESCAPE:
             self.window.show_view(MainMenuView())
+        elif 48 <= key <= 57:  # только цифры
+            self.add_char(chr(key))
+
+    def add_char(self, char):
+        if not char.isdigit():
+            return  # принимаем только цифры
+        if self.active_field == 0 and len(self.card_number) < 16:
+            self.card_number += char
+        elif self.active_field == 1 and len(self.cvv) < 3:
+            self.cvv += char
+        elif self.active_field == 2 and len(self.date) < 5:
+            if len(self.date) == 0:
+                if int(char) > 1:
+                    return
+            elif len(self.date) == 1:
+                # месяц <= 12
+                month = int(self.date[0] + char)
+                if month < 1 or month > 12:
+                    return
+            if len(self.date) == 2:
+                self.date += '/'  # разделитель после месяца
+            self.date += char
+
+    def remove_char(self):
+        if self.active_field == 0:
+            self.card_number = self.card_number[:-1]
+        elif self.active_field == 1:
+            self.cvv = self.cvv[:-1]
+        elif self.active_field == 2:
+            self.date = self.date[:-1]
 
 
 def main():
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
-    window.music_player = None  # ← ВАЖНО
+    window.music_player = None
     start_view = MainMenuView()
     window.show_view(start_view)
     arcade.run()
