@@ -133,7 +133,9 @@ class LevelView(arcade.View, PostEffectMixin):
     def __init__(self, level_num):
         super().__init__()
         self.level_num = level_num
-        self.game_ = arcade.play_sound(level_sound, volume=1, loop=True)
+        self.level_music_player = None
+        if not self.level_music_player:
+            self.level_music_player = arcade.play_sound(level_sound, volume=1, loop=True)
 
         # Игровые объекты
         self.plain_list = None
@@ -264,7 +266,7 @@ class LevelView(arcade.View, PostEffectMixin):
                 self.enemy_list.append(enemy)
         elif self.level_num == 3:
             for i in range(3):
-                enemy = arcade.Sprite(":resources:images/enemies/fly.png", SPRITE_SCALING)
+                enemy = arcade.Sprite("images/ufo.png", SPRITE_SCALING)
                 enemy.center_x = random.randint(100, MAP_WIDTH - 100)
                 enemy.center_y = random.randint(100, MAP_HEIGHT - 100)
                 enemy.shoot_timer = 0
@@ -528,7 +530,7 @@ class EndView(arcade.View, PostEffectMixin):
     def on_draw(self):
         self.clear()
         arcade.draw_text("ПОБЕДА!", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 50, arcade.color.GREEN, 40, anchor_x="center")
-        arcade.draw_text("Вы сбежали с корабля!", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, arcade.color.WHITE, 24,
+        arcade.draw_text("Вы сбежали с планеты!", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, arcade.color.WHITE, 24,
                          anchor_x="center")
         arcade.draw_text("Нажмите ESC, чтобы выйти", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 50, arcade.color.GRAY, 18,
                          anchor_x="center")
