@@ -375,6 +375,7 @@ class LevelView(arcade.View, PostEffectMixin):
                 bullet.remove_from_sprite_lists()
                 self.lives -= 1
                 if self.lives <= 0:
+                    self.window.death_count += 1
                     self.setup()
 
         # Пули за экраном
@@ -580,6 +581,15 @@ class EndView(arcade.View, PostEffectMixin):
             SCREEN_HEIGHT / 2 + 70,
             arcade.color.WHITE,
             24,
+            anchor_x="center"
+        )
+
+        arcade.draw_text(
+            f"Смертей за игру: {self.window.death_count}",
+            SCREEN_WIDTH / 2,
+            SCREEN_HEIGHT / 2 + 20,
+            arcade.color.RED,
+            22,
             anchor_x="center"
         )
 
@@ -906,6 +916,7 @@ class PodpiskaView(arcade.View, PostEffectMixin):
 def main():
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     window.music_player = None
+    window.death_count = 0
     start_view = MainMenuView()
     window.show_view(start_view)
     arcade.run()
