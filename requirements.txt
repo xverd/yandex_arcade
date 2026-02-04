@@ -1,1 +1,1 @@
-pip install arcade[full]
+arcade>=3.0
