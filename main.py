@@ -3,6 +3,8 @@ import math
 import random
 import enum
 
+from db import add_run, get_next_run_number
+
 # Константы
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
@@ -542,6 +544,15 @@ class EndView(arcade.View, PostEffectMixin):
     def __init__(self, window=None):
         super().__init__(window)
 
+        # При создании экрана окончания игры сохраняем результат в базу
+        if self.window is not None:
+            try:
+                add_run(self.window.run_number, self.window.death_count)
+                self.window.run_number += 1
+            except Exception:
+                # Если что-то пошло не так с БД, игру не ломаем
+                pass
+
         win_sound = arcade.load_sound("sound/win.mp3")
         play_music(self.window, win_sound, volume=1)
 
@@ -917,6 +928,13 @@ def main():
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     window.music_player = None
     window.death_count = 0
+
+    # Инициализируем базу данных и номер прохождения
+    try:
+        window.run_number = get_next_run_number()
+    except Exception:
+        window.run_number = 1
+
     start_view = MainMenuView()
     window.show_view(start_view)
     arcade.run()
